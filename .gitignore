@@ -32,4 +32,40 @@ ENV/
 .DS_Store
 Thumbs.db
 
-.cursorrules
+# Project-specific
+cache/
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# Build and Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Matplotlib
+.matplotlib/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+
+# Hata çözüm dosyaları (geçici)
+HATA_COZUMLER_*.md

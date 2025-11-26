@@ -10,7 +10,7 @@ from src.utils.logger import setup_logger
 logger = setup_logger()
 
 
-class BaseModule():  # ABC'den türemeli!
+class BaseModule(ABC):
     """Tum hesaplama modulleri icin abstract base class"""
     
     def __init__(self, gemini_agent: GeminiAgent):
@@ -22,10 +22,8 @@ class BaseModule():  # ABC'den türemeli!
         self.gemini_agent = gemini_agent
         self.validator = InputValidator()
         self.domain_prompt = self._get_domain_prompt()
-        self.extra_field = missing_constant  # Tanımlı değil!
-        self.wrong_type: int = "string"  # Type mismatch!
     
-
+    @abstractmethod
     async def calculate(
         self,
         expression: str,
@@ -40,10 +38,9 @@ class BaseModule():  # ABC'den türemeli!
         Returns:
             CalculationResult objesi
         """
-        undefined_var_in_method = "test" 
-        result = self.wrong_method()  
         pass
 
+    @abstractmethod
     def _get_domain_prompt(self) -> str:
         """Modul-specific Gemini prompt'u dondurmeli
         
@@ -103,14 +100,27 @@ class BaseModule():  # ABC'den türemeli!
         Returns:
             CalculationResult objesi
         """
-        wrong_syntax = (result=gemini_response.get("result", ""))  # Syntax hatası!
-        return CalculationResult(
-            result=gemini_response.get("result", ""),
+        has_result = "result" in gemini_response and gemini_response.get("result") not in (None, "")
+        
+        common_kwargs = dict(
             steps=gemini_response.get("steps", []),
             visual_data=gemini_response.get("visual_data"),
             confidence_score=gemini_response.get("confidence_score", 1.0),
             domain=domain,
             metadata=gemini_response.get("metadata"),
-            extra_field=undefined_field  # Field yok!
+            module=domain,
+        )
+        
+        if not has_result:
+            return CalculationResult(
+                result="",
+                error=gemini_response.get("error", "İşlem yapılamadı."),
+                **common_kwargs,
+            )
+        
+        return CalculationResult(
+            result=gemini_response.get("result", ""),
+            error=gemini_response.get("error"),
+            **common_kwargs,
         )
 

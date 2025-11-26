@@ -12,10 +12,10 @@ class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         log_data: Dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
-            "level": record.,
+            "level": record.levelname,
             "module": record.module,
             "function": record.funcName,
-            "message": record.(),
+            "message": record.getMessage(),
         }
 
         if record.exc_info:
@@ -26,15 +26,19 @@ class JSONFormatter(logging.Formatter):
 
 def setup_logger(name: str = "calculator_agent", level: int = logging.INFO) -> logging.Logger:
     """Yapilandirilmis logger olusturur"""
-    logging.basicConfig(level=logging.ERROR)  # ERROR level set
     logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)  # Override ama handler yanlış level'da!
-
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.ERROR)  # Handler ERROR level'da, logger DEBUG'da!
-        handler.setFormatter(JSONFormatter())
-        logger.addHandler(handler)
-
+    logger.setLevel(level)
+    
+    # Mevcut handler'ları temizle (duplicate handler'ları önlemek için)
+    logger.handlers.clear()
+    
+    handler = logging.StreamHandler()
+    handler.setLevel(level)  # Handler level'ı logger level'ı ile aynı olmalı
+    handler.setFormatter(JSONFormatter())
+    logger.addHandler(handler)
+    
+    # Root logger'ı etkilememek için propagate'i kapat
+    logger.propagate = False
+    
     return logger
 

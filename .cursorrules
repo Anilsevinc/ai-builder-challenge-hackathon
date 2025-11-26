@@ -51,9 +51,10 @@ calculator-agent/
 │   ├── conftest.py
 │   ├── test_integration.py
 │   └── modules/
+│       ├── test_basic_math.py
 │       ├── test_calculus.py
 │       ├── test_linear_algebra.py
-│       └── ... (her modül için ayrı test)
+│       └── ... (her modül için ayrı test: test_financial.py, test_equation_solver.py, test_graph_plotter.py)
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -65,11 +66,11 @@ calculator-agent/
 ```python
 # ✅ DOĞRU
 async def solve_expression(self, expression: str) -> CalculationResult:
-    response = await self.gemini_model.generate_content_async(prompt)
+    response = await self.gemini_agent.generate_json_response(prompt)
 
 # ❌ YANLIŞ
 def solve_expression(self, expression: str) -> CalculationResult:
-    response = self.gemini_model.generate_content(prompt)
+    response = self.gemini_agent.generate_json_response(prompt)  # await eksik!
 ```
 
 ### 2. Tip Belirtilmesi (Type Hints)
@@ -98,6 +99,14 @@ class InvalidInputError(CalculationError):
 class GeminiAPIError(Exception):
     """Gemini API'den dönen hata"""
     pass
+
+class SecurityViolationError(Exception):
+    """Güvenlik ihlali tespit edildi"""
+    pass
+
+class CalculatorModuleNotFoundError(Exception):
+    """Modül bulunamadı (Python'ın built-in ModuleNotFoundError'ını shadow etmemek için)"""
+    pass
 ```
 
 ### 4. Modül Yapısı (BaseModule Abstract Class)
@@ -105,14 +114,16 @@ Tüm modüller `BaseModule` class'ından türemeli:
 
 ```python
 from abc import ABC, abstractmethod
-from typing import Any
 from src.schemas.models import CalculationResult
+from src.core.agent import GeminiAgent
+from src.core.validator import InputValidator
 
 class BaseModule(ABC):
     """Tüm hesaplama modülleri için abstract base class"""
     
-    def __init__(self, gemini_model: Any):
-        self.gemini_model = gemini_model
+    def __init__(self, gemini_agent: GeminiAgent):
+        self.gemini_agent = gemini_agent
+        self.validator = InputValidator()
         self.domain_prompt = self._get_domain_prompt()
     
     @abstractmethod
@@ -127,7 +138,9 @@ class BaseModule(ABC):
     
     def validate_input(self, expression: str) -> bool:
         """Giriş doğrulama (opsiyonel override)"""
-        return bool(expression.strip())
+        self.validator.sanitize_expression(expression)
+        self.validator.validate_length(expression)
+        return True
 ```
 
 ## Gemini SDK Kullanım Pattern'leri
@@ -157,12 +170,15 @@ Sen bir lineer cebir uzmanısın. Matris/vektör işlemlerini NumPy formatında 
 ```python
 # src/core/agent.py
 class GeminiAgent:
-    def __init__(self, api_key: str, model_name: str = "gemini-1.5-pro"):
-        self.model = genai.GenerativeModel(model_name)
-        self.rate_limiter = RateLimiter(calls_per_minute=60)
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
+        self.api_key = api_key or settings.GEMINI_API_KEY
+        self.model_name = model_name or settings.GEMINI_MODEL
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel(self.model_name, safety_settings=self._get_safety_settings())
+        self.rate_limiter = RateLimiter(settings.RATE_LIMIT_CALLS_PER_MINUTE)
     
-    async def generate_with_retry(self, prompt: str, max_retries: int = 3) -> str:
-        """Rate limiting ve retry mekanizması ile Gemini çağrısı"""
+    async def generate_json_response(self, prompt: str, max_retries: int = 3) -> Dict[str, Any]:
+        """Rate limiting ve retry mekanizması ile Gemini çağrısı - JSON response döner"""
         await self.rate_limiter.acquire()
         
         for attempt in range(max_retries):
@@ -175,7 +191,14 @@ class GeminiAgent:
                         "max_output_tokens": 2048
                     }
                 )
-                return response.text
+                # JSON parse et ve döndür
+                import json
+                import re
+                response_text = response.text
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                if json_match:
+                    return json.loads(json_match.group())
+                raise GeminiAPIError("JSON formatında response alınamadı")
             except Exception as e:
                 if attempt == max_retries - 1:
                     raise GeminiAPIError(f"API hatası: {e}")
@@ -252,10 +275,19 @@ safety_settings = {
 # tests/modules/test_calculus.py
 @pytest.mark.asyncio
 async def test_calculus_derivative_polynomial(mock_gemini_agent):
+    # Mock'u doğru sonuç döndürecek şekilde yapılandır
+    mock_gemini_agent.generate_json_response.return_value = {
+        "result": 12.0,
+        "steps": ["d/dx(x^3) = 3x^2", "3x^2 at x=2 = 3 * 4 = 12"],
+        "confidence_score": 1.0,
+    }
+    
     module = CalculusModule(mock_gemini_agent)
     result = await module.calculate("derivative x^3 at x=2")
     assert result.result == 12.0
     assert len(result.steps) >= 1
+    assert result.domain == "calculus"
+    assert result.confidence_score == 1.0
 ```
 
 ## Modüler Geliştirme Akışı

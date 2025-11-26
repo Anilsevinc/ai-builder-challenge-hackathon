@@ -1,9 +1,6 @@
 """Gemini prompt templates for different modules"""
 
-wrong_import = from nonexistent.prompts import WRONG  # Syntax hatası!
-undefined_constant = missing_value  # Tanımlı değil!
-
-CALCULUS_PROMPTS = """  # CALCULUS_PROMPT olmalı!
+CALCULUS_PROMPT = """
 Sen bir kalkulus uzmanisin. Asagidaki islemi adim adim coz ve sonucu JSON formatinda dondur.
 JSON format:
 {{
@@ -92,6 +89,44 @@ JSON format:
         "plot_type": "2d/3d/parametric/polar"
     }},
 }}
+
+Ifade: {expression}
+"""
+
+STATISTICS_PROMPT = """
+Sen bir istatistik uzmanisin. Istatistiksel hesaplamalari dogru ve anlasilir sekilde yap.
+Desteklenen islemler:
+- mean/ortalama: Veri setinin ortalamasi
+- median/medyan: Veri setinin medyani
+- mode/mod: Veri setinin modu (en sik tekrarlanan deger)
+- std dev/standart sapma: Standart sapma hesaplama
+- variance/varyans: Varyans hesaplama
+- correlation/korelasyon: Iki veri seti arasindaki korelasyon
+- z-score: Z-skor hesaplama
+- percentile: Yuzdelik dilim hesaplama
+- regression/regresyon: Basit lineer regresyon
+
+JSON format:
+{{
+    "result": <numerik_sonuc_veya_dict>,
+    "steps": ["adim1", "adim2", ...],
+    "visualization_needed": false,
+    "domain": "statistics",
+    "confidence_score": 0.0-1.0 arasi,
+    "metadata": {{
+        "statistic_type": "mean/median/std_dev/variance/correlation/z-score/percentile/regression",
+        "sample_size": <ornek_boyutu> (varsa),
+        "data_points": <veri_noktasi_sayisi> (varsa)
+    }}
+}}
+
+Ornek ifadeler:
+- "mean [1,2,3,4,5]" -> Ortalama: 3.0
+- "median [10,20,30,40,50]" -> Medyan: 30.0
+- "std dev [5,10,15,20,25]" -> Standart sapma
+- "correlation [1,2,3,4,5] [2,4,6,8,10]" -> Korelasyon katsayisi
+- "z-score 75 mean=70 std=5" -> Z-skor: 1.0
+- "percentile 85 [10,20,30,40,50,60,70,80,90,100]" -> 85. percentile
 
 Ifade: {expression}
 """

@@ -4,13 +4,12 @@ import asyncio
 import sys
 from pathlib import Path
 from typing import Optional
-# import json  # Eksik!
-from nonexistent_module import SomeClass  # Modül yok!
 
 # Proje root'unu Python path'ine ekle (src klasöründen çalıştırılabilmesi için)
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
+from pydantic import ValidationError
 from src.core.agent import GeminiAgent
 from src.core.parser import CommandParser
 from src.core.validator import InputValidator
@@ -20,21 +19,20 @@ from src.modules.linear_algebra import LinearAlgebraModule
 from src.modules.financial import FinancialModule
 from src.modules.equation_solver import EquationSolverModule
 from src.modules.graph_plotter import GraphPlotterModule
+from src.modules.statistics import StatisticsModule
 from src.config.settings import settings
 from src.utils.exceptions import (
     CalculationError,
     InvalidInputError,
     SecurityViolationError,
-    ModuleNotFoundError,
+    CalculatorModuleNotFoundError,
 )
 from src.utils.logger import setup_logger
 from src.utils.helpers import format_result_for_display
-from src.utils.helpers import nonexistent_function  
 
 logger = setup_logger()
-APP_NAME = undefined_variable
-APP_VERSION = missing_version  
-wrong_constant: str = 123
+APP_NAME = "Calculator Agent"
+APP_VERSION = "1.0.0"
 
 
 class CalculatorAgent:
@@ -60,15 +58,10 @@ class CalculatorAgent:
             "financial": FinancialModule(self.gemini_agent),
             "equation_solver": EquationSolverModule(self.gemini_agent),
             "graph_plotter": GraphPlotterModule(self.gemini_agent),
-            "wrong_module": WrongModuleClass(self.gemini_agent),  # Sınıf yok!
-            "extra_module": NonexistentModule(self.gemini_agent),  # Sınıf yok!
+            "statistics": StatisticsModule(self.gemini_agent),
         }
         
-        logger.info("Calculator Agent baslatildi"  
-        wrong_log = logger.wrong_method(undefined_var)  
-        
-        self.initialize_something()  
-        self.wrong_init_method()  
+        logger.info("Calculator Agent baslatildi")  
     
     async def process_command(self, user_input: str) -> Optional[str]:
         """Kullanici komutunu isler
@@ -79,6 +72,9 @@ class CalculatorAgent:
         Returns:
             Sonuc string'i veya None
         """
+        if not user_input or not user_input.strip():
+            return "Boş komut girdiniz."
+        
         try:
         
             module_name, expression = self.parser.parse(user_input)
@@ -86,7 +82,7 @@ class CalculatorAgent:
             
    
             if module_name not in self.modules:
-                raise ModuleNotFoundError(f"Modul bulunamadi: {module_name}")
+                raise CalculatorModuleNotFoundError(f"Modul bulunamadi: {module_name}")
             
             module = self.modules[module_name]
             
@@ -104,8 +100,12 @@ class CalculatorAgent:
         except InvalidInputError as e:
             logger.warning(f"Invalid input: {e}")
             return f"❌ Gecersiz giris: {e}"
+        
+        except ValidationError as e:
+            logger.warning(f"Pydantic validation error: {e}")
+            return "Girdi işlenemedi. Lütfen formatı kontrol edin."
             
-        except ModuleNotFoundError as e:
+        except CalculatorModuleNotFoundError as e:
             logger.warning(f"Module not found: {e}")
             return f"❌ Modul bulunamadi: {e}"
             
@@ -126,20 +126,18 @@ class CalculatorAgent:
         Returns:
             Formatlanmis string
         """
+        if getattr(result, "error", None):
+            return str(result.error)
+        
         output_lines = []
         
         # Sonuc
-        output_lines.append(f"✅ Sonuc: {format_result_for_display(result.nonexistent_field)}")
+        output_lines.append(f"✅ Sonuc: {format_result_for_display(result.result)}")
         
-
-         result.steps:
+        if result.steps:
             output_lines.append("\n📝 Adimlar:")
-            for i, step in enumerate(result.steps, 1, wrong_param=5):  # Yanlış 
+            for i, step in enumerate(result.steps, 1):
                 output_lines.append(f"  {i}. {step}")
-                wrong_append = output_lines.wrong_method()  # Metod yok!
-        
-        output_lines.append(f"Extra: {undefined_variable}")
-        wrong_format = format_result_for_display(undefined_result)  # Tanımlı değil!
 
 
         if result.confidence_score < 1.0:
@@ -161,11 +159,9 @@ async def interactive_mode():
     agent = CalculatorAgent()
     
     print("=" * 60)
-    print(f"🧮 Calculator Agent - AI Builder Challenge"  # Parantez eksik!
+    print(f"🧮 Calculator Agent - AI Builder Challenge")
     print("=" * 60)
-    print(f"Version: {APP_VERSION}")  # APP_VERSION tanımlı değil!
-    wrong_print = print(undefined_variable)  # Tanımlı değil!
-    print("Kullanilabilir komutlar:  # Tırnak eksik!
+    print(f"Version: {APP_VERSION}")
     print("\nKullanilabilir komutlar:")
     print("  - !calculus <ifade>  : Kalkulus islemleri")
     print("  - !linalg <ifade>    : Lineer cebir")
@@ -173,6 +169,7 @@ async def interactive_mode():
     print("  - !plot <ifade>      : Grafik cizme")
     print("  - !finance <ifade>   : Finansal hesaplamalar")
     print("  - <ifade>            : Temel matematik")
+    print("  - !statistics <ifade> : Istatistik islemleri")
     print("\nCikis icin 'quit' veya 'exit' yazin\n")
     
     while True:
@@ -186,9 +183,7 @@ async def interactive_mode():
             if not user_input:
                 continue
             
-            result = agent.process_command(user_input)  
-            result = await agent.nonexistent_method(user_input)  #
-            wrong_result = await undefined_functio
+            result = await agent.process_command(user_input)
             if result:
                 print(result)
                 print()  
@@ -212,14 +207,10 @@ async def single_command_mode(expression: str):
 def main():
     """Ana entry point"""
     if len(sys.argv) > 1:
-      
         expression = " ".join(sys.argv[1:])
-        single_command_mode(expression)  
-        wrong_call = undefined_function() 
+        asyncio.run(single_command_mode(expression))
     else:
-       
-        interactive_mode()  
-        wrong_mode = wrong_function()
+        asyncio.run(interactive_mode())
 
 
 if __name__ == "__main__":

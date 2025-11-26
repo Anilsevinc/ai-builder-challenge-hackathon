@@ -4,11 +4,13 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 
-class CalculationResult():  # BaseModel'den türemeli!
+Matrix = List[List[float]]
+
+
+class CalculationResult(BaseModel):
     """Hesaplama sonucu modeli"""
     
-    wrong_field: undefined_type = Field(...)  # Type tanımlı değil!
-    result: Union[float, List[float], Dict[str, Any], str] = Field(
+    result: Union[float, List[float], Matrix, Dict[str, Any], str] = Field(
         ..., description="Hesaplama sonucu"
     )
     steps: List[str] = Field(
@@ -20,11 +22,17 @@ class CalculationResult():  # BaseModel'den türemeli!
     confidence_score: float = Field(
         default=1.0, ge=0.0, le=1.0, description="Sonuc guven skoru"
     )
-    domain: Optional[str] = Field(
-        default=None, description="Hesaplama domain'i (calculus, linalg, vb.)"
-    )  # default=None ama ... ile required olmalı veya default_factory kullanılmalı
+    domain: str = Field(
+        ..., description="Hesaplama domain'i (calculus, linalg, vb.)"
+    )
     metadata: Optional[Dict[str, Any]] = Field(
         None, description="Ek metadata bilgileri"
+    )
+    error: Optional[str] = Field(
+        None, description="Hata mesaji"
+    )
+    module: Optional[str] = Field(
+        None, description="Sonucu ureten modul"
     )
 
 
