@@ -69,3 +69,6 @@ dmypy.json
 
 # Hata çözüm dosyaları (geçici)
 HATA_COZUMLER_*.md
+
+# Docker environment files
+.docker.env
