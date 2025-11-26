@@ -4967,21 +4967,153 @@ python -m cProfile -o profile.stats src/main.py
 
 ### 3. Test Stratejisi
 
-Her hatayı düzelttikten sonra:
+Her hatayı düzelttikten sonra, düzeltilen hatanın gerçek test senaryoları ile doğrulanması gerekmektedir. Projede kullanılan test pattern'leri:
+
+#### 3.1. Async Modül Testleri (pytest.mark.asyncio)
 
 ```python
-# Unit Test Örneği
-def test_fixed_error():
-    """Düzeltilen hatanın testi"""
+@pytest.mark.asyncio
+async def test_basic_addition(mock_gemini_agent):
+    """Temel toplama testi"""
+    # Arrange: Mock'u doğru sonuç döndürecek şekilde yapılandır
+    mock_gemini_agent.generate_json_response.return_value = {
+        "result": 4.0,
+        "steps": ["2 + 2 = 4"],
+        "confidence_score": 1.0,
+    }
+
+    # Act: Modülü oluştur ve hesaplama yap
+    module = BasicMathModule(mock_gemini_agent)
+    result = await module.calculate("2 + 2")
+
+    # Assert: Tüm kritik alanları doğrula
+    assert result is not None
+    assert result.domain == "basic_math"
+    assert result.confidence_score == 1.0
+    assert result.result == 4.0
+    assert len(result.steps) > 0
+```
+
+#### 3.2. Exception Testleri (pytest.raises)
+
+```python
+@pytest.mark.asyncio
+async def test_calculus_invalid_input(mock_gemini_agent):
+    """Geçersiz giriş testi"""
     # Arrange
-    [test_verileri]
+    module = CalculusModule(mock_gemini_agent)
+
+    # Act & Assert: Exception fırlatılmalı
+    with pytest.raises(InvalidInputError):
+        await module.calculate("")
+```
+
+#### 3.3. Security Validation Testleri
+
+```python
+def test_validator_sanitize_forbidden_eval():
+    """Validator - yasaklı pattern: eval"""
+    # Arrange
+    validator = InputValidator()
+
+    # Act & Assert: SecurityViolationError fırlatılmalı
+    with pytest.raises(
+        SecurityViolationError,
+        match="Yasakli ifade tespit edildi: eval"
+    ):
+        validator.sanitize_expression("eval('malicious')")
+```
+
+#### 3.4. Float Karşılaştırma Testleri (Tolerance)
+
+```python
+@pytest.mark.asyncio
+async def test_calculus_integral(mock_gemini_agent):
+    """Integral testi"""
+    # Arrange
+    mock_gemini_agent.generate_json_response.return_value = {
+        "result": 1/3,
+        "steps": ["∫[0 to 1] x^2 dx", "= [x^3/3][0 to 1]"],
+        "confidence_score": 1.0,
+    }
+
+    module = CalculusModule(mock_gemini_agent)
+    result = await module.calculate("integral x^2 from 0 to 1")
+
+    # Assert: Float karşılaştırması için tolerance kullan
+    assert abs(result.result - 1/3) < 0.0001
+    assert result.domain == "calculus"
+    assert len(result.steps) > 0
+```
+
+#### 3.5. Mock Fixture Kullanımı
+
+```python
+@pytest.mark.asyncio
+async def test_matrix_multiplication(mock_gemini_agent):
+    """Matris çarpımı testi"""
+    # Arrange: Mock'u matris çarpımı için doğru sonuç
+    # döndürecek şekilde yapılandır
+    mock_gemini_agent.generate_json_response.return_value = {
+        "result": [[17], [39]],
+        "steps": ["[[1,2],[3,4]] * [[5],[6]] = [[17],[39]]"],
+        "confidence_score": 1.0,
+    }
 
     # Act
-    [test_aksiyonu]
+    module = LinearAlgebraModule(mock_gemini_agent)
+    result = await module.calculate("[[1,2],[3,4]] * [[5],[6]]")
 
-    # Assert
-    [beklenen_sonuç]
+    # Assert: Sonuç tipi ve değeri kontrol et
+    assert result.result == [[17], [39]]
+    assert isinstance(result.result, list)
+    assert result.confidence_score == 1.0
 ```
+
+#### 3.6. Error Handling Testleri
+
+```python
+@pytest.mark.asyncio
+async def test_basic_math_invalid_characters(mock_gemini_agent):
+    """Geçersiz karakterler engellenir"""
+    # Arrange
+    module = BasicMathModule(mock_gemini_agent)
+
+    # Act
+    result = await module.calculate("import('os').system('rm -rf /')")
+
+    # Assert: Hata mesajı ve API çağrısı yapılmamalı
+    assert result.error == "Geçersiz veya yasaklı ifade girdiniz."
+    assert result.result == ""
+    mock_gemini_agent.generate_json_response.assert_not_called()
+```
+
+#### 3.7. Rate Limiter Testleri (Async Mock)
+
+```python
+@pytest.mark.asyncio
+async def test_rate_limiter_acquire_with_wait():
+    """Rate limiter - bekleme gerektiren durum"""
+    # Arrange
+    limiter = RateLimiter(calls_per_minute=60)
+    limiter.last_call_time = 0.0
+
+    # Act & Assert: Minimum 1 saniye bekleme garantisi
+    with patch('time.time', side_effect=[0.5, 0.5, 2.0]):
+        with patch('asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
+            await limiter.acquire()
+            mock_sleep.assert_called_once()
+            assert mock_sleep.call_args[0][0] >= 1.0
+```
+
+#### Test Best Practices
+
+1. **Mock Yapılandırması**: Her test kendi mock değerini set etmeli
+2. **Kapsamlı Assertion**: Sadece `result is not None` değil, tüm kritik alanları kontrol et
+3. **Float Karşılaştırması**: `abs(result - expected) < tolerance` kullan
+4. **Exception Testleri**: `pytest.raises` ile doğru exception tipini ve mesajını kontrol et
+5. **Async Testler**: `@pytest.mark.asyncio` decorator'ını unutma
+6. **Mock Verification**: API çağrılarının yapılıp yapılmadığını kontrol et
 
 ---
 
@@ -5474,22 +5606,27 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.13
+          python-version: 3.11
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
 
       - name: Run tests with coverage
-        run: pytest --cov=src --cov-report=xml
+        run: pytest --cov=src --cov-report=html --cov-report=term -v
 
-      - name: Lint
-        run: flake8 src tests
+      - name: Lint with flake8
+        run: flake8 src tests --max-line-length=79 --statistics
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage.xml
+          path: htmlcov/
+          if-no-files-found: ignore
 
 ```
 
@@ -5516,10 +5653,10 @@ jobs:
 
 **Pipeline Durumu:**
 
-- ✅ Build: [durum]
-- ✅ Test: [durum]
-- ✅ Lint: [durum]
-- ✅ Deploy: [durum]
+- Build:  ✅
+- Test:   ✅
+- Lint:   ✅
+- Deploy: ✅
 
 ---
 
