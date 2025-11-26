@@ -12,7 +12,7 @@ async def test_rate_limiter_acquire_no_wait():
     """Rate limiter - bekleme gerektirmeyen durum"""
     limiter = RateLimiter(calls_per_minute=60)
     limiter.last_call_time = 0.0
-    
+
     with patch('time.time', return_value=2.0):
         # İlk çağrıdan 2 saniye geçmiş, bekleme gerekmez
         await limiter.acquire()
@@ -24,7 +24,7 @@ async def test_rate_limiter_acquire_with_wait():
     """Rate limiter - bekleme gerektiren durum"""
     limiter = RateLimiter(calls_per_minute=60)
     limiter.last_call_time = 0.0
-    
+
     with patch('time.time', side_effect=[0.5, 0.5, 2.0]):
         # İlk çağrıdan 0.5 saniye geçmiş, bekleme gerekir
         with patch('asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
@@ -39,7 +39,7 @@ async def test_rate_limiter_minimum_wait():
     """Rate limiter - minimum 1 saniye bekleme garantisi"""
     limiter = RateLimiter(calls_per_minute=120)  # 0.5 saniye interval
     limiter.last_call_time = 0.0
-    
+
     with patch('time.time', side_effect=[0.3, 0.3, 2.0]):
         with patch('asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
             await limiter.acquire()
@@ -51,13 +51,15 @@ async def test_rate_limiter_minimum_wait():
 @pytest.mark.asyncio
 async def test_gemini_agent_init_success():
     """GeminiAgent başlatma - başarılı"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         agent = GeminiAgent(api_key="test_key", model_name="test-model")
-        
+
         assert agent.api_key == "test_key"
         assert agent.model_name == "test-model"
         assert agent.rate_limiter is not None
@@ -77,20 +79,26 @@ def test_gemini_agent_init_no_api_key():
 @pytest.mark.asyncio
 async def test_generate_with_retry_success():
     """generate_with_retry - başarılı çağrı"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         mock_response = MagicMock()
         mock_response.text = "Test response"
-        mock_model_instance.generate_content_async = AsyncMock(return_value=mock_response)
-        
+        mock_model_instance.generate_content_async = AsyncMock(
+            return_value=mock_response
+        )
+
         agent = GeminiAgent(api_key="test_key")
-        
-        with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock):
+
+        with patch.object(
+            agent.rate_limiter, 'acquire', new_callable=AsyncMock
+        ):
             result = await agent.generate_with_retry("test prompt")
-            
+
             assert result == "Test response"
             mock_model_instance.generate_content_async.assert_called_once()
 
@@ -98,19 +106,25 @@ async def test_generate_with_retry_success():
 @pytest.mark.asyncio
 async def test_generate_with_retry_empty_response():
     """generate_with_retry - boş yanıt"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         mock_response = MagicMock()
         mock_response.text = None
         mock_response.candidates = []
-        mock_model_instance.generate_content_async = AsyncMock(return_value=mock_response)
-        
+        mock_model_instance.generate_content_async = AsyncMock(
+            return_value=mock_response
+        )
+
         agent = GeminiAgent(api_key="test_key")
-        
-        with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock):
+
+        with patch.object(
+            agent.rate_limiter, 'acquire', new_callable=AsyncMock
+        ):
             with pytest.raises(GeminiAPIError, match="Bos yanit alindi"):
                 await agent.generate_with_retry("test prompt")
 
@@ -118,24 +132,32 @@ async def test_generate_with_retry_empty_response():
 @pytest.mark.asyncio
 async def test_generate_with_retry_exception_retry():
     """generate_with_retry - exception sonrası retry"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         # İlk çağrı exception, ikinci başarılı
         mock_response = MagicMock()
         mock_response.text = "Success"
         mock_model_instance.generate_content_async = AsyncMock(
             side_effect=[Exception("API Error"), mock_response]
         )
-        
+
         agent = GeminiAgent(api_key="test_key")
-        
-        with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock), \
-             patch('asyncio.sleep', new_callable=AsyncMock):
-            result = await agent.generate_with_retry("test prompt", max_retries=2)
-            
+
+        with (
+            patch.object(
+                agent.rate_limiter, 'acquire', new_callable=AsyncMock
+            ),
+            patch('asyncio.sleep', new_callable=AsyncMock)
+        ):
+            result = await agent.generate_with_retry(
+                "test prompt", max_retries=2
+            )
+
             assert result == "Success"
             assert mock_model_instance.generate_content_async.call_count == 2
 
@@ -143,17 +165,19 @@ async def test_generate_with_retry_exception_retry():
 @pytest.mark.asyncio
 async def test_generate_with_retry_max_retries_exceeded():
     """generate_with_retry - maksimum retry aşıldı"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         mock_model_instance.generate_content_async = AsyncMock(
             side_effect=Exception("API Error")
         )
-        
+
         agent = GeminiAgent(api_key="test_key")
-        
+
         with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock), \
              patch('asyncio.sleep', new_callable=AsyncMock):
             with pytest.raises(GeminiAPIError, match="API hatasi"):
@@ -163,20 +187,28 @@ async def test_generate_with_retry_max_retries_exceeded():
 @pytest.mark.asyncio
 async def test_generate_json_response_success():
     """generate_json_response - başarılı JSON parse"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         mock_response = MagicMock()
-        mock_response.text = '{"result": 42, "steps": ["step1"], "confidence_score": 1.0}'
-        mock_model_instance.generate_content_async = AsyncMock(return_value=mock_response)
-        
+        mock_response.text = (
+            '{"result": 42, "steps": ["step1"], "confidence_score": 1.0}'
+        )
+        mock_model_instance.generate_content_async = AsyncMock(
+            return_value=mock_response
+        )
+
         agent = GeminiAgent(api_key="test_key")
-        
-        with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock):
+
+        with patch.object(
+            agent.rate_limiter, 'acquire', new_callable=AsyncMock
+        ):
             result = await agent.generate_json_response("test prompt")
-            
+
             assert result["result"] == 42.0
             assert result["steps"] == ["step1"]
             assert result["confidence_score"] == 1.0
@@ -185,20 +217,26 @@ async def test_generate_json_response_success():
 @pytest.mark.asyncio
 async def test_generate_json_response_json_decode_error():
     """generate_json_response - JSON decode hatası"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         mock_response = MagicMock()
         mock_response.text = "Invalid JSON {"
-        mock_model_instance.generate_content_async = AsyncMock(return_value=mock_response)
-        
+        mock_model_instance.generate_content_async = AsyncMock(
+            return_value=mock_response
+        )
+
         agent = GeminiAgent(api_key="test_key")
-        
-        with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock):
+
+        with patch.object(
+            agent.rate_limiter, 'acquire', new_callable=AsyncMock
+        ):
             result = await agent.generate_json_response("test prompt")
-            
+
             # Fallback structured response
             assert result["result"] == "Invalid JSON {"
             assert result["steps"] == ["Invalid JSON {"]
@@ -208,20 +246,26 @@ async def test_generate_json_response_json_decode_error():
 @pytest.mark.asyncio
 async def test_generate_json_response_no_json_match():
     """generate_json_response - JSON pattern bulunamadı"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         mock_response = MagicMock()
         mock_response.text = "No JSON here"
-        mock_model_instance.generate_content_async = AsyncMock(return_value=mock_response)
-        
+        mock_model_instance.generate_content_async = AsyncMock(
+            return_value=mock_response
+        )
+
         agent = GeminiAgent(api_key="test_key")
-        
-        with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock):
+
+        with patch.object(
+            agent.rate_limiter, 'acquire', new_callable=AsyncMock
+        ):
             result = await agent.generate_json_response("test prompt")
-            
+
             # Fallback structured response
             assert result["result"] == "No JSON here"
             assert result["steps"] == ["No JSON here"]
@@ -231,20 +275,25 @@ async def test_generate_json_response_no_json_match():
 @pytest.mark.asyncio
 async def test_generate_json_response_int_to_float():
     """generate_json_response - int sonucu float'a çevirme"""
-    with patch('google.generativeai.configure'), \
-         patch('google.generativeai.GenerativeModel') as mock_model:
+    with (
+        patch('google.generativeai.configure'),
+        patch('google.generativeai.GenerativeModel') as mock_model
+    ):
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         mock_response = MagicMock()
         mock_response.text = '{"result": 42, "steps": []}'
-        mock_model_instance.generate_content_async = AsyncMock(return_value=mock_response)
-        
+        mock_model_instance.generate_content_async = AsyncMock(
+            return_value=mock_response
+        )
+
         agent = GeminiAgent(api_key="test_key")
-        
-        with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock):
+
+        with patch.object(
+            agent.rate_limiter, 'acquire', new_callable=AsyncMock
+        ):
             result = await agent.generate_json_response("test prompt")
-            
+
             assert result["result"] == 42.0
             assert isinstance(result["result"], float)
-

@@ -9,7 +9,7 @@ Matrix = List[List[float]]
 
 class CalculationResult(BaseModel):
     """Hesaplama sonucu modeli"""
-    
+
     result: Union[float, List[float], Matrix, Dict[str, Any], str] = Field(
         ..., description="Hesaplama sonucu"
     )
@@ -38,10 +38,9 @@ class CalculationResult(BaseModel):
 
 class CalculationRequest(BaseModel):
     """Hesaplama istegi modeli"""
-    
+
     expression: str = Field(..., description="Hesaplanacak ifade")
     module: Optional[str] = Field(None, description="Kullanilacak modul")
     parameters: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Ek parametreler"
     )
-

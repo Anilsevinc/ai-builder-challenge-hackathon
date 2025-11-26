@@ -7,7 +7,7 @@ from src.utils.exceptions import SecurityViolationError, InvalidInputError
 
 class InputValidator:
     """Giris dogrulama ve guvenlik sinifi"""
-    
+
     FORBIDDEN_PATTERNS: List[str] = [
         "__import__",
         "eval(",
@@ -22,48 +22,48 @@ class InputValidator:
         "__file__",
         "__name__",
     ]
-    
+
     def sanitize_expression(self, expression: str) -> str:
         """Guvenlik icin giris temizleme
-        
+
         Args:
             expression: Kullanici giris ifadesi
-            
+
         Returns:
             Temizlenmis ifade
-            
+
         Raises:
             SecurityViolationError: Yasakli ifade tespit edildi
         """
         if not expression or not isinstance(expression, str):
             raise InvalidInputError("Gecersiz giris: ifade string olmali")
-        
+
         expression = expression.strip()
-        
+
         if not expression:
             raise InvalidInputError("Bos ifade gonderilemez")
-        
+
         expression_lower = expression.lower()
-        
+
         # Yasaklı pattern kontrolü
         for pattern in self.FORBIDDEN_PATTERNS:
             if pattern in expression_lower:
                 raise SecurityViolationError(
                     f"Yasakli ifade tespit edildi: {pattern}"
                 )
-        
+
         return expression
-    
+
     def validate_length(self, expression: str, max_length: int = 1000) -> bool:
         """Ifade uzunlugunu kontrol eder
-        
+
         Args:
             expression: Kontrol edilecek ifade
             max_length: Maksimum uzunluk
-            
+
         Returns:
             True if valid
-            
+
         Raises:
             InvalidInputError: Uzunluk asildi
         """
@@ -72,13 +72,13 @@ class InputValidator:
                 f"Ifade cok uzun. Maksimum {max_length} karakter"
             )
         return True
-    
+
     def validate_numeric_expression(self, expression: str) -> bool:
         """Temel numerik ifade kontrolu
-        
+
         Args:
             expression: Kontrol edilecek ifade
-            
+
         Returns:
             True if valid
         """
@@ -86,4 +86,3 @@ class InputValidator:
         if not re.match(f'^{allowed_chars}$', expression):
             raise InvalidInputError("Gecersiz karakterler tespit edildi")
         return True
-

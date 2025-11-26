@@ -24,21 +24,23 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_data, ensure_ascii=False)
 
 
-def setup_logger(name: str = "calculator_agent", level: int = logging.INFO) -> logging.Logger:
+def setup_logger(
+    name: str = "calculator_agent",
+    level: int = logging.INFO
+) -> logging.Logger:
     """Yapilandirilmis logger olusturur"""
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    
+
     # Mevcut handler'ları temizle (duplicate handler'ları önlemek için)
     logger.handlers.clear()
-    
+
     handler = logging.StreamHandler()
     handler.setLevel(level)  # Handler level'ı logger level'ı ile aynı olmalı
     handler.setFormatter(JSONFormatter())
     logger.addHandler(handler)
-    
+
     # Root logger'ı etkilememek için propagate'i kapat
     logger.propagate = False
-    
-    return logger
 
+    return logger

@@ -1,6 +1,5 @@
 """Tests for command parser"""
 
-import pytest
 from src.core.parser import CommandParser
 
 
@@ -233,19 +232,18 @@ def test_parser_turkish_keywords():
     parser = CommandParser()
     module, expression = parser.parse("turev x^2")
     assert module == "calculus"
-    
+
     module, expression = parser.parse("matris carpimi")
     assert module == "linear_algebra"
-    
+
     module, expression = parser.parse("denklem coz")
     assert module == "equation_solver"
-    
+
     module, expression = parser.parse("grafik ciz")
     assert module == "graph_plotter"
-    
+
     module, expression = parser.parse("faiz hesapla")
     assert module == "financial"
-    
+
     module, expression = parser.parse("ortalama hesapla")
     assert module == "statistics"
-

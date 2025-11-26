@@ -1,7 +1,8 @@
 """Gemini prompt templates for different modules"""
 
 CALCULUS_PROMPT = """
-Sen bir kalkulus uzmanisin. Asagidaki islemi adim adim coz ve sonucu JSON formatinda dondur.
+Sen bir kalkulus uzmanisin. Asagidaki islemi adim adim coz ve
+sonucu JSON formatinda dondur.
 JSON format:
 {{
     "result": <numerik_sonuc_veya_sonuc_listesi>,
@@ -16,7 +17,8 @@ Ifade: {expression}
 """
 
 LINEAR_ALGEBRA_PROMPT = """
-Sen bir lineer cebir uzmanisin. Matris/vektor islemlerini NumPy formatinda anlasilir adimlarla acikla.
+Sen bir lineer cebir uzmanisin. Matris/vektor islemlerini NumPy
+formatinda anlasilir adimlarla acikla.
 JSON format:
 {{
     "result": <matris_veya_vektor_listesi>,
@@ -30,7 +32,8 @@ Ifade: {expression}
 """
 
 BASIC_MATH_PROMPT = """
-Sen bir matematik uzmanisin. Temel matematik islemlerini dogru ve hizli sekilde coz.
+Sen bir matematik uzmanisin. Temel matematik islemlerini dogru
+ve hizli sekilde coz.
 JSON format:
 {{
     "result": <numerik_sonuc>,
@@ -44,7 +47,8 @@ Ifade: {expression}
 """
 
 FINANCIAL_PROMPT = """
-Sen bir finans uzmanisin. Finansal hesaplamalari yuksek hassasiyetle yap (Decimal kullan).
+Sen bir finans uzmanisin. Finansal hesaplamalari yuksek
+hassasiyetle yap (Decimal kullan).
 Para birimi: {currency}
 JSON format:
 {{
@@ -74,7 +78,8 @@ Ifade: {expression}
 """
 
 GRAPH_PLOTTER_PROMPT = """
-Sen bir grafik uzmanisin. Fonksiyonlari analiz et ve grafik cizimi icin gerekli veriyi hazirla.
+Sen bir grafik uzmanisin. Fonksiyonlari analiz et ve grafik
+cizimi icin gerekli veriyi hazirla.
 JSON format:
 {{
     "result": "Grafik olusturuldu",
@@ -94,7 +99,8 @@ Ifade: {expression}
 """
 
 STATISTICS_PROMPT = """
-Sen bir istatistik uzmanisin. Istatistiksel hesaplamalari dogru ve anlasilir sekilde yap.
+Sen bir istatistik uzmanisin. Istatistiksel hesaplamalari dogru
+ve anlasilir sekilde yap.
 Desteklenen islemler:
 - mean/ortalama: Veri setinin ortalamasi
 - median/medyan: Veri setinin medyani
@@ -130,4 +136,3 @@ Ornek ifadeler:
 
 Ifade: {expression}
 """
-

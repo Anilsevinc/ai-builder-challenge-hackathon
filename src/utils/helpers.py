@@ -3,18 +3,18 @@
 import json
 import re
 import ast
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 
 def parse_matrix_string(matrix_str: str) -> List[List[float]]:
     """Matris string'ini Python listesine cevirir
-    
+
     Args:
         matrix_str: [[1,2],[3,4]] formatinda string
-        
+
     Returns:
         Iki boyutlu liste
-        
+
     Raises:
         ValueError: Gecersiz format
     """
@@ -23,13 +23,13 @@ def parse_matrix_string(matrix_str: str) -> List[List[float]]:
         matrix_str = matrix_str.strip()
         if not (matrix_str.startswith('[') and matrix_str.endswith(']')):
             raise ValueError("Matris format hatasi")
-        
+
         # JSON benzeri parsing
         result = ast.literal_eval(matrix_str)
-        
+
         if not isinstance(result, list):
             raise ValueError("Matris list olmali")
-            
+
         return result
     except Exception as e:
         raise ValueError(f"Matris parse hatasi: {e}")
@@ -37,10 +37,10 @@ def parse_matrix_string(matrix_str: str) -> List[List[float]]:
 
 def extract_expression_from_command(command: str) -> Optional[str]:
     """Komut string'inden ifadeyi cikarir
-    
+
     Args:
         command: Kullanici komutu
-        
+
     Returns:
         Cikarilan ifade veya None
     """
@@ -52,19 +52,20 @@ def extract_expression_from_command(command: str) -> Optional[str]:
         r'^!plot\s+(.+)$',
         r'^!finance\s+(.+)$',
     ]
-    
+
     for pattern in patterns:
         match = re.match(pattern, command, re.IGNORECASE)
         if match:
             return match.group(1).strip()
-    
+
     return command.strip()
 
 
 def validate_numeric_result(result: Any) -> bool:
     """Sonucun numerik olup olmadigini kontrol eder"""
     return isinstance(result, (int, float)) or (
-        isinstance(result, list) and all(isinstance(x, (int, float)) for x in result)
+        isinstance(result, list) and
+        all(isinstance(x, (int, float)) for x in result)
     )
 
 
@@ -80,4 +81,3 @@ def format_result_for_display(result: Any) -> str:
         return json.dumps(result, indent=2, ensure_ascii=False)
     else:
         return str(result)
-

@@ -13,10 +13,10 @@ async def test_basic_addition(mock_gemini_agent):
         "steps": ["2 + 2 = 4"],
         "confidence_score": 1.0,
     }
-    
+
     module = BasicMathModule(mock_gemini_agent)
     result = await module.calculate("2 + 2")
-    
+
     assert result is not None
     assert result.domain == "basic_math"
     assert result.confidence_score == 1.0
@@ -32,10 +32,10 @@ async def test_basic_multiplication(mock_gemini_agent):
         "steps": ["3 * 4 = 12"],
         "confidence_score": 1.0,
     }
-    
+
     module = BasicMathModule(mock_gemini_agent)
     result = await module.calculate("3 * 4")
-    
+
     assert result is not None
     assert result.domain == "basic_math"
     assert result.result == 12.0
@@ -47,9 +47,11 @@ async def test_basic_multiplication(mock_gemini_agent):
 async def test_basic_math_invalid_characters(mock_gemini_agent):
     """Geçersiz karakterler engellenir"""
     module = BasicMathModule(mock_gemini_agent)
-    
-    result = await module.calculate("import('os').system('rm -rf /')")
-    
+
+    result = await module.calculate(
+        "import('os').system('rm -rf /')"
+    )
+
     assert result.error == "Geçersiz veya yasaklı ifade girdiniz."
     assert result.result == ""
     mock_gemini_agent.generate_json_response.assert_not_called()
@@ -59,10 +61,11 @@ async def test_basic_math_invalid_characters(mock_gemini_agent):
 async def test_basic_math_missing_operand(mock_gemini_agent):
     """Eksik operand senaryosu"""
     module = BasicMathModule(mock_gemini_agent)
-    
+
     result = await module.calculate("5 +")
-    
-    assert result.error == "Hatalı işlem: Eksik operand. Örnek kullanım: !basic 5 + 3"
+
+    assert result.error == (
+        "Hatalı işlem: Eksik operand. Örnek kullanım: !basic 5 + 3"
+    )
     assert result.result == ""
     mock_gemini_agent.generate_json_response.assert_not_called()
-

@@ -24,4 +24,3 @@ class SecurityViolationError(Exception):
 class CalculatorModuleNotFoundError(Exception):
     """Modul bulunamadi"""
     pass
-

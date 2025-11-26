@@ -152,4 +152,3 @@ def test_format_result_for_display_string():
     """format_result_for_display - string"""
     result = format_result_for_display("test")
     assert result == "test"
-

@@ -4,7 +4,6 @@ import os
 import pytest
 from unittest.mock import patch
 from src.config import reload_settings
-from src.config.settings import Settings
 
 
 def test_settings_default_values():
@@ -24,7 +23,9 @@ def test_settings_default_values():
 
 def test_settings_validate_success():
     """Settings - validation başarılı"""
-    with patch.dict(os.environ, {'GEMINI_API_KEY': 'valid_api_key'}, clear=True):
+    with patch.dict(
+        os.environ, {'GEMINI_API_KEY': 'valid_api_key'}, clear=True
+    ):
         with patch('src.config.settings.load_dotenv'):
             settings_module = reload_settings()
         settings = settings_module.Settings()
@@ -46,7 +47,11 @@ def test_settings_validate_empty_api_key():
 
 def test_settings_validate_placeholder_api_key():
     """Settings - validation: placeholder API key"""
-    with patch.dict(os.environ, {'GEMINI_API_KEY': 'your_gemini_api_key'}, clear=True):
+    with patch.dict(
+        os.environ,
+        {'GEMINI_API_KEY': 'your_gemini_api_key'},
+        clear=True
+    ):
         with patch('src.config.settings.load_dotenv'):
             settings_module = reload_settings()
         settings = settings_module.Settings()
@@ -80,4 +85,3 @@ def test_settings_environment_variables():
         assert settings.MAX_OUTPUT_TOKENS == 1024
         assert settings.MAX_RETRIES == 5
         assert settings.DEFAULT_CURRENCY == 'USD'
-
