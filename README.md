@@ -79,6 +79,62 @@ cp .env.example .env
 
 ---
 
+## 🐳 Docker ile Kurulum ve Deploy
+
+### Hızlı Başlangıç
+
+```bash
+# 1. Environment dosyasını hazırla
+cp .docker.env.example .docker.env
+# .docker.env dosyasını düzenle ve GEMINI_API_KEY'i ekle
+
+# 2. Docker Compose ile çalıştır
+docker-compose up -d
+
+# 3. Logları görüntüle
+docker-compose logs -f
+
+# 4. Interactive mode için container'a bağlan
+docker-compose exec calculator-agent python -m src.main
+```
+
+### Docker Image Build
+
+```bash
+# Image'ı build et
+docker build -t calculator-agent:latest .
+
+# Tek komut çalıştır
+docker run --rm --env-file .docker.env calculator-agent:latest "2 + 2"
+```
+
+### GitHub Actions ile Otomatik Build ve Push
+
+Proje, GitHub Actions ile otomatik Docker build ve Docker Hub'a push desteği içerir.
+
+**Gerekli Secrets:**
+- `DOCKER_USERNAME`: Docker Hub kullanıcı adı
+- `DOCKER_PASSWORD`: Docker Hub şifresi veya access token
+
+**Kullanım:**
+```bash
+# Main branch'e push yap
+git push origin main
+
+# GitHub Actions otomatik olarak:
+# - Docker image build eder
+# - Multi-arch (amd64, arm64) support
+# - Docker Hub'a push eder
+# - Production'a deploy eder (yapılandırıldıysa)
+```
+
+**Detaylı Deploy Talimatları:**
+
+Detaylı Docker deployment talimatları için [DEPLOY.md](DEPLOY.md) dosyasına bakın.
+Production deployment örnekleri için [.github/workflows/deploy-examples.md](.github/workflows/deploy-examples.md) dosyasına bakın.
+
+---
+
 ## 🐛 Hata Kategorileri
 
 ### Level 1: Syntax Hataları (10 puan/hata)
@@ -5596,7 +5652,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GEMINI_API_KEY: dummy-ci-key
       GEMINI_MODEL: gemini-2.5-flash
 
     steps:
@@ -5615,6 +5670,8 @@ jobs:
           pip install flake8
 
       - name: Run tests with coverage
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: pytest --cov=src --cov-report=html --cov-report=term -v
 
       - name: Lint with flake8
@@ -5628,6 +5685,13 @@ jobs:
           path: htmlcov/
           if-no-files-found: ignore
 
+      - name: Build Docker image (test)
+        if: github.event_name == 'push'
+        run: |
+          docker build -t calculator-agent:test .
+          docker images calculator-agent:test
+
+
 ```
 
 **Pipeline Adımları:**
@@ -5636,7 +5700,47 @@ jobs:
    `actions/checkout@v3` kullanılarak repository içeriği pipeline ortamına çekiliyor.
 
 2. **Python Ortamının Kurulması**  
-   `actions/setup-python@v4` ile belirtilen Python sürümü (`3.13`) kuruluyor.
+   `actions/setup-python@v4` ile belirtilen Python sürümü (`3.11`) kuruluyor.
+
+### Docker Build and Push Pipeline
+
+**Otomatik Docker Build ve Deployment:**
+
+```yaml
+# .github/workflows/docker.yml
+name: Docker Build and Push
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    - Build Docker image (multi-arch: amd64, arm64)
+    - Push to Docker Hub
+    - Cache optimization with GitHub Actions cache
+  
+  deploy:
+    - Deploy to production (SSH/Kubernetes/AWS/Google Cloud)
+    - Health checks
+    - Rollback support
+```
+
+**Özellikler:**
+- ✅ Multi-architecture support (linux/amd64, linux/arm64)
+- ✅ Build cache optimization
+- ✅ Automatic tagging (latest, branch, sha, semver)
+- ✅ Production deployment support
+- ✅ Security: Secrets management
+
+**Gerekli Secrets:**
+- `DOCKER_USERNAME`: Docker Hub kullanıcı adı
+- `DOCKER_PASSWORD`: Docker Hub access token
+- Production deployment için: `SSH_PRIVATE_KEY`, `KUBE_CONFIG`, vb.
+
+Detaylı deployment örnekleri için [.github/workflows/deploy-examples.md](.github/workflows/deploy-examples.md) dosyasına bakın.
 
 3. **Bağımlılıkların Yüklenmesi**  
    `pip install -r requirements.txt` ile proje bağımlılıkları kuruluyor.

@@ -1,0 +1,136 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Image digest
+        run: echo "Image pushed with digest ${{ steps.meta.outputs.digest }}"
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://your-production-url.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to production
+        env:
+          DOCKER_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: |
+          echo "🚀 Deploying to production..."
+          echo "Image: $DOCKER_IMAGE"
+          
+          # Production deployment seçenekleri:
+          
+          # 1. SSH ile Remote Server Deployment
+          # - name: Setup SSH
+          #   uses: webfactory/ssh-agent@v0.7.0
+          #   with:
+          #     ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # - name: Deploy via SSH
+          #   run: |
+          #     ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+          #       "docker pull $DOCKER_IMAGE && \
+          #        docker-compose -f /path/to/docker-compose.yml pull && \
+          #        docker-compose -f /path/to/docker-compose.yml up -d"
+          
+          # 2. Kubernetes Deployment
+          # - name: Setup kubectl
+          #   uses: azure/setup-kubectl@v3
+          # - name: Configure kubectl
+          #   run: |
+          #     echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+          #     export KUBECONFIG=kubeconfig
+          # - name: Deploy to Kubernetes
+          #   run: |
+          #     kubectl set image deployment/calculator-agent \
+          #       calculator-agent=$DOCKER_IMAGE
+          #     kubectl rollout status deployment/calculator-agent
+          
+          # 3. Docker Swarm Deployment
+          # - name: Deploy to Swarm
+          #   run: |
+          #     echo "${{ secrets.SWARM_CA }}" | base64 -d > swarm-ca.pem
+          #     docker -H ${{ secrets.SWARM_HOST }} \
+          #       --tls --tlscert swarm-ca.pem \
+          #       service update --image $DOCKER_IMAGE calculator-agent
+          
+          # 4. AWS ECS Deployment
+          # - name: Configure AWS credentials
+          #   uses: aws-actions/configure-aws-credentials@v2
+          #   with:
+          #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          #     aws-region: us-east-1
+          # - name: Deploy to ECS
+          #   run: |
+          #     aws ecs update-service \
+          #       --cluster calculator-cluster \
+          #       --service calculator-agent \
+          #       --force-new-deployment
+          
+          echo "✅ Deployment completed!"
+

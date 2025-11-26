@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build-test:
@@ -41,3 +43,9 @@ jobs:
           name: coverage-report
           path: htmlcov/
           if-no-files-found: ignore
+
+      - name: Build Docker image (test)
+        if: github.event_name == 'push'
+        run: |
+          docker build -t calculator-agent:test .
+          docker images calculator-agent:test
