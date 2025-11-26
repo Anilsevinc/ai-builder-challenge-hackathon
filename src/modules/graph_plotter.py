@@ -2,10 +2,12 @@
 
 from pathlib import Path
 from typing import Dict, Any
+
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+
 from src.modules.base_module import BaseModule
 from src.schemas.models import CalculationResult
 from src.config.prompts import GRAPH_PLOTTER_PROMPT
@@ -46,7 +48,6 @@ class GraphPlotterModule(BaseModule):
         self.validate_input(expression)
 
         logger.info(f"Graph plotting: {expression}")
-
 
         cache_key = expression.lower().strip()
         if cache_key in self.plot_cache:

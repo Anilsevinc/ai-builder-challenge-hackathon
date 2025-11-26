@@ -33,7 +33,9 @@ async def test_financial_calculate_with_currency(mock_gemini_agent):
     }
 
     module = FinancialModule(mock_gemini_agent)
-    result = await module.calculate("loan payment 10000 0.05 12", currency="USD")
+    result = await module.calculate(
+        "loan payment 10000 0.05 12", currency="USD"
+    )
 
     assert result.domain == "financial"
     # Currency parametresi Gemini'ye gönderildiğini kontrol et

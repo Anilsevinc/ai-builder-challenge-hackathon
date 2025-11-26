@@ -178,8 +178,12 @@ async def test_generate_with_retry_max_retries_exceeded():
 
         agent = GeminiAgent(api_key="test_key")
 
-        with patch.object(agent.rate_limiter, 'acquire', new_callable=AsyncMock), \
-             patch('asyncio.sleep', new_callable=AsyncMock):
+        with (
+            patch.object(
+                agent.rate_limiter, 'acquire', new_callable=AsyncMock
+            ),
+            patch('asyncio.sleep', new_callable=AsyncMock)
+        ):
             with pytest.raises(GeminiAPIError, match="API hatasi"):
                 await agent.generate_with_retry("test prompt", max_retries=2)
 

@@ -50,7 +50,6 @@ class CalculatorAgent:
         self.parser = CommandParser()
         self.validator = InputValidator()
 
-
         self.modules = {
             "basic_math": BasicMathModule(self.gemini_agent),
             "calculus": CalculusModule(self.gemini_agent),
@@ -139,7 +138,6 @@ class CalculatorAgent:
             output_lines.append("\n📝 Adimlar:")
             for i, step in enumerate(result.steps, 1):
                 output_lines.append(f"  {i}. {step}")
-
 
         if result.confidence_score < 1.0:
             output_lines.append(

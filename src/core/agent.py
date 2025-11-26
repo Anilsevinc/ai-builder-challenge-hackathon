@@ -179,7 +179,6 @@ class GeminiAgent:
 
                 await asyncio.sleep(2 ** attempt)
 
-
     async def generate_json_response(
         self,
         prompt: str,

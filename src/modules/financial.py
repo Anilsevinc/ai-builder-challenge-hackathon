@@ -46,7 +46,6 @@ class FinancialModule(BaseModule):
         try:
             response = await self._call_gemini(expression, currency=currency)
 
-
             result_value = response.get("result", 0)
             if isinstance(result_value, (int, float)):
                 result_value = Decimal(str(result_value))

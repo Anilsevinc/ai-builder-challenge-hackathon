@@ -14,7 +14,9 @@ class BasicMathModule(BaseModule):
     """Temel matematik modulu"""
 
     INVALID_EXPRESSION_MESSAGE = "Geçersiz veya yasaklı ifade girdiniz."
-    MISSING_OPERAND_MESSAGE = "Hatalı işlem: Eksik operand. Örnek kullanım: !basic 5 + 3"
+    MISSING_OPERAND_MESSAGE = (
+        "Hatalı işlem: Eksik operand. Örnek kullanım: !basic 5 + 3"
+    )
     ALLOWED_PATTERN = re.compile(r'^[0-9+\-*/\.\s]+$')
     NUMBER_PATTERN = re.compile(r'(?:\d+(?:\.\d+)?|\.\d+)')
 
@@ -34,7 +36,9 @@ class BasicMathModule(BaseModule):
         validation_error = self._validate_expression(expression)
         if validation_error:
             logger.warning(f"Basic math validation failed: {validation_error}")
-            return self._create_result({"error": validation_error}, "basic_math")
+            return self._create_result(
+                {"error": validation_error}, "basic_math"
+            )
 
         logger.info(f"Basic math calculation: {expression}")
 

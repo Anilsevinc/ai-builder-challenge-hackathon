@@ -1,8 +1,8 @@
 """Tests for main.py CLI and orchestrator"""
 
 import pytest
-import asyncio
-import sys
+import asyncio  # noqa: F401
+import sys  # noqa: F401
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.main import (
     CalculatorAgent,

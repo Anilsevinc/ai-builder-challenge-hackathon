@@ -39,7 +39,9 @@ async def test_graph_plotter_calculate_cache_miss(mock_gemini_agent, tmp_path):
         module = GraphPlotterModule(mock_gemini_agent)
         module.cache_dir = tmp_path
 
-        with patch.object(module, '_create_plot', new_callable=AsyncMock) as mock_plot:
+        with patch.object(
+            module, '_create_plot', new_callable=AsyncMock
+        ) as mock_plot:
             mock_plot.return_value = {"png": str(tmp_path / "plot.png")}
 
             result = await module.calculate("x^2")
@@ -193,7 +195,9 @@ async def test_graph_plotter_calculate_exception(
 ):
     """Graph plotter - calculate exception handling"""
     with patch('src.modules.graph_plotter.Path', return_value=tmp_path):
-        mock_gemini_agent.generate_json_response.side_effect = Exception("API Error")
+        mock_gemini_agent.generate_json_response.side_effect = Exception(
+            "API Error"
+        )
 
         module = GraphPlotterModule(mock_gemini_agent)
         module.cache_dir = tmp_path

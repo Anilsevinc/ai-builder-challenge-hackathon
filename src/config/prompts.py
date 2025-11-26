@@ -120,7 +120,10 @@ JSON format:
     "domain": "statistics",
     "confidence_score": 0.0-1.0 arasi,
     "metadata": {{
-        "statistic_type": "mean/median/std_dev/variance/correlation/z-score/percentile/regression",
+        "statistic_type": (
+            "mean/median/std_dev/variance/correlation/"
+            "z-score/percentile/regression"
+        ),
         "sample_size": <ornek_boyutu> (varsa),
         "data_points": <veri_noktasi_sayisi> (varsa)
     }}
