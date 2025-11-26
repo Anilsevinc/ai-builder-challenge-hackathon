@@ -4,15 +4,15 @@ from pathlib import Path
 from typing import Dict, Any
 
 import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend
+matplotlib.use('Agg')  # Non-interactive backend - must be before pyplot
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from src.modules.base_module import BaseModule
-from src.schemas.models import CalculationResult
-from src.config.prompts import GRAPH_PLOTTER_PROMPT
-from src.utils.logger import setup_logger
-from src.utils.exceptions import CalculationError
+from src.modules.base_module import BaseModule  # noqa: E402
+from src.schemas.models import CalculationResult  # noqa: E402
+from src.config.prompts import GRAPH_PLOTTER_PROMPT  # noqa: E402
+from src.utils.logger import setup_logger  # noqa: E402
+from src.utils.exceptions import CalculationError  # noqa: E402
 
 logger = setup_logger()
 
